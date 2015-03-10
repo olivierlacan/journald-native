@@ -5,6 +5,46 @@
 
 #include "ruby_exception_wrapper.h"
 
+namespace ruby_exception_wrapper {
+    typedef VALUE ruby_method_t(...);
+
+    namespace {
+        template<typename T>
+        struct function_arguments;
+
+        template<typename R, typename ...Args>
+        struct function_arguments<std::function<R(Args...)>> {
+            typedef std::make_index_sequence<sizeof...(Args)> argsIdx;
+            typedef std::tuple<Args...> args;
+        };
+
+        template <typename Func, Func func, typename... Args>
+        VALUE method_wrapper_call(Args... args)
+        {
+            try {
+                return func(args...);
+            } catch(ruby_exception_wrapper::RbWrappedException &e) {
+                rb_exc_raise(e.getRubyException());
+            }
+        }
+
+        template <typename Func, typename CallTuple, std::size_t... CallIndices>
+        constexpr Func method_wrapper(Func func)
+        {
+            return method_wrapper_call<Func, func, typename std::tuple_element<CallIndices..., CallTuple>>;
+        }
+    }
+
+    template <typename Func>
+    constexpr ruby_method_t* wrap_method(Func func)
+    {
+        return (ruby_method_t*) method_wrapper<Func,
+                typename function_arguments<std::function<Func>>::args,
+                typename function_arguments<std::function<Func>>::argsIdx
+        >(func);
+    }
+}
+
 namespace journald_native {
 
 // just a short alias for ruby_raisable_call()
@@ -55,7 +95,9 @@ inline void init_constants(VALUE module)
 
 inline void init_methods(VALUE module)
 {
-    rb_define_singleton_method(module, "print",  RUBY_METHOD_FUNC(native_print),  2);
+    rb_define_singleton_method(module, "print",  ruby_exception_wrapper::wrap_method<decltype(native_print_impl)>(native_print_impl),  2);
+
+//    rb_define_singleton_method(module, "print",  RUBY_METHOD_FUNC(native_print),  2);
     rb_define_singleton_method(module, "send",   RUBY_METHOD_FUNC(native_send),  -1); /* -1 to pass as C array */
     rb_define_singleton_method(module, "perror", RUBY_METHOD_FUNC(native_perror), 1);
 }
