@@ -45,7 +45,7 @@ namespace ruby_exception_wrapper {
         // callback for rb_rescue2 for no exceptions
         template <typename CallTuple>
         VALUE call_wrapper_tuple(VALUE v_ct) {
-            CallTuple call_tuple = std::move(*reinterpret_cast<CallTuple*>(v_ct));
+            CallTuple& call_tuple = *reinterpret_cast<CallTuple*>(v_ct);
 
             return call_wrapper_tuple_unpack(call_tuple, std::make_index_sequence<std::tuple_size<CallTuple>::value> {});
         };
