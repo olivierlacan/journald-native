@@ -20,10 +20,9 @@ inline auto r(Func f, Args... args) -> decltype(f(args...))
 /* methods */
 inline VALUE native_print(VALUE v_self, VALUE v_priority, VALUE v_message)
 {
-    int         priority = NUM2INT(v_priority);
-    std::string message  = r(rb_string_value_cstr, &v_message);
+    int priority = NUM2INT(v_priority);
 
-    int         result   = sd_journal_print(priority, "%s", message.c_str());
+    int result   = sd_journal_print(priority, "%s", r(rb_string_value_cstr, &v_message));
 
     return INT2NUM(result);
 }
@@ -46,9 +45,7 @@ inline VALUE native_send(int argc, VALUE* argv, VALUE v_self)
 
 inline VALUE native_perror(VALUE v_self, VALUE v_message)
 {
-    std::string message = r(rb_string_value_cstr, &v_message);
-
-    int         result  = sd_journal_perror(message.c_str());
+    int result = sd_journal_perror(r(rb_string_value_cstr, &v_message));
 
     return INT2NUM(result);
 }
