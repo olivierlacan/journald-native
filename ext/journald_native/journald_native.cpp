@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "ruby_exception_wrapper.h"
+#include "ruby_exception_wrapper.hpp"
 
 namespace journald_native {
 
